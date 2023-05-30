@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Aplicación web express</title>
+    <script src="/jquery/jquery.js"></script>
+</head>
+
+<body>
+    <h1>Mi Página con Node.js - Express</h1>
+
+    <section>
+        <h2>Crear nuevos usuarios</h2>
+        <form id="formCreateUser">
+            <label for="nombre">Nombre</label>
+            <input type="text" name="nombre" id="nombre" required>
+            <br>
+            <label for="apellido">Apellido</label>
+            <input type="text" name="apellido" id="apellido" required>
+            <br>
+            <button>Crear usuario</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Usuarios del sistema:</h2>
+        <ul id="usuarios">
+
+        </ul>
+    </section>
+
+    <section>
+        <h2>Actualizar Usuarios</h2>
+        <select name="usuario" id="updateUsuario" onchange="change(this.value)"></select>
+        <form id="formUpdateUser">
+            <br>
+            <label>ID: <span id="updateId"></span></label>
+            <br>
+            <label for="nombre">Nombre</label>
+            <input type="text" name="nombre" id="updateNombre" required>
+            <br>
+            <label for="apellido">Apellido</label>
+            <input type="text" name="apellido" id="updateApellido" required>
+            <br>
+            <button>Actualizar usuario</button>
+        </form>
+    </section>
+
+
+
+    <script>
+
+        let formCreateUser = document.getElementById("formCreateUser");
+        formCreateUser.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const myHeaders = new Headers();
+            myHeaders.append("Content-Type", "application/json");
+
+            var raw = JSON.stringify({
+                nombre: nombre.value,
+                apellido: apellido.value
+            });
+
+            var requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                body: raw,
+                redirect: 'follow'
+            };
+
+            fetch("http://localhost:3000/usuarios", requestOptions)
+                .then(response => response.json())
+                .then(result => {
+                    alert(`Usuario creado con id: ${result.usuario.id}`)
+                    cargarUsuarios();
+
+                })
+                .catch(error => console.log('error', error));
+        })
+
+        const getUsuarios = () => {
+            return new Promise((resolve, reject) => {
+                fetch("http://localhost:3000/usuarios")
+                    .then(response => response.json())
+                    .then(usuarios => {
+                        resolve(usuarios)
+                    })
+                    .catch(error => reject())
+            })
+        }
+
+        const cargarUsuarios = async () => {
+            try {
+                let arrayUsuarios = await getUsuarios();
+                let lista = document.getElementById("usuarios");
+                let select = document.getElementById("updateUsuario");
+
+                let contenido = "";
+                let options = '<option>Eliga una Opcion</option>';
+                arrayUsuarios.forEach(usuario => {
+                    contenido += `<li>${usuario.id} - ${usuario.nombre} - <a onclick='borrar("${usuario.id}")'>Borrar</a></li>`
+                    options += `<option value='${usuario.id}'> ${usuario.nombre} ${usuario.apellido} </option>`
+                })
+                lista.innerHTML = contenido;
+                select.innerHTML = options;
+            }
+            catch (error) {
+                alert("Error al cargar los usuarios.")
+            }
+        }
+
+        const change = (elemento) => {
+            let id = elemento
+            fetch("http://localhost:3000/usuarios/" + id)
+                .then(response => response.json())
+                .then(result => {
+                    $('#updateId').text(result.id)
+                    $('#updateNombre').val(result.nombre)
+                    $('#updateApellido').val(result.apellido)
+                })
+                .catch(error => console.log('error', error));
+        }
+        $('#formUpdateUser').on('submit', (e) => {
+            e.preventDefault();
+
+            let id = $('#updateId').text()
+            var myHeaders = new Headers();
+            myHeaders.append("Content-Type", "application/json");
+
+            var raw = JSON.stringify({
+                "nombre": $('#updateNombre').val(),
+                "apellido": $('#updateApellido').val()
+            });
+
+            var requestOptions = {
+                method: 'PUT',
+                headers: myHeaders,
+                body: raw,
+                redirect: 'follow'
+            };
+
+            fetch("http://localhost:3000/usuarios/"+id, requestOptions)
+                .then(response => response.json())
+                .then(result => (result))
+                    alert('Actualización correcta')
+                    cargarUsuarios()
+                .catch(error => console.log('error', error));
+        })
+
+
+        const borrar = (id) => {
+            if (!confirm('Esta seguro que desea eliminar?')) {
+                return
+            }
+            var requestOptions = {
+                method: 'DELETE'
+            };
+
+            fetch("http://localhost:3000/usuarios/" + id, requestOptions)
+                .then(response => response.json())
+                .then(result => {
+                    alert(result.message)
+                    cargarUsuarios()
+                })
+                .catch(error => console.log('error', error));
+        }
+
+
+
+        const main = async () => {
+            cargarUsuarios();
+
+        }
+
+        main();
+
+
+
+    </script>
+</body>
+
+</html>
